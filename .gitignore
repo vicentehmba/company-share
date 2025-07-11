@@ -44,3 +44,7 @@ next-env.d.ts
 
 # Project planning and internal documentation
 NEXT_STEPS.md
+
+# GitHub folder (contains copilot instructions and workflows)
+.github/
+
