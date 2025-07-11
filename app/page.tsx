@@ -94,7 +94,10 @@ export default function Home() {
       <footer className="border-t bg-background/80 backdrop-blur-sm mt-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-muted-foreground">
-            <p>&copy; 2024 CompanyShare. Built with Next.js and TypeScript.</p>
+            <p>
+              &copy; {new Date().getFullYear()} CompanyShare. Built with Next.js
+              and TypeScript.
+            </p>
           </div>
         </div>
       </footer>
