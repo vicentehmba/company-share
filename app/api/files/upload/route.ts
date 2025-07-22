@@ -1,3 +1,13 @@
+// Validate required environment variables at runtime
+function validateEnv() {
+  const requiredVars = ["DATABASE_URL", "MAX_FILE_SIZE"];
+  const missing = requiredVars.filter((v) => !process.env[v]);
+  if (missing.length > 0) {
+    console.error("Missing environment variables:", missing.join(", "));
+    return false;
+  }
+  return true;
+}
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { writeFile, mkdir } from "fs/promises";
@@ -7,6 +17,12 @@ import { authOptions } from "@/lib/auth";
 import { isValidFileType } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
+  if (!validateEnv()) {
+    return NextResponse.json(
+      { error: "Server misconfiguration" },
+      { status: 500 }
+    );
+  }
   try {
     const session = await getServerSession(authOptions);
 
@@ -26,8 +42,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
     }
 
-    // Check file size (10MB limit)
+    // Check file size (from env, fallback 10MB)
     const maxSize = parseInt(process.env.MAX_FILE_SIZE || "10485760");
+    if (isNaN(maxSize) || maxSize <= 0) {
+      console.error("MAX_FILE_SIZE is not a valid number");
+      return NextResponse.json(
+        { error: "Server misconfiguration" },
+        { status: 500 }
+      );
+    }
     if (file.size > maxSize) {
       return NextResponse.json({ error: "File too large" }, { status: 400 });
     }
