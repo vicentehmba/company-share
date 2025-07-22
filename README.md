@@ -162,14 +162,51 @@ CMD ["npm", "start"]
 
 ## 📝 Environment Variables
 
-| Variable          | Description                  | Required           |
-| ----------------- | ---------------------------- | ------------------ |
-| `DATABASE_URL`    | PostgreSQL connection string | Yes                |
-| `NEXTAUTH_SECRET` | Secret for NextAuth.js       | Yes                |
-| `NEXTAUTH_URL`    | Base URL of your application | Yes                |
-| `MAX_FILE_SIZE`   | Maximum file size in bytes   | No (default: 10MB) |
+| Variable             | Description                               | Required           | Example Value                       |
+| -------------------- | ----------------------------------------- | ------------------ | ----------------------------------- |
+| `DATABASE_URL`       | PostgreSQL connection string              | Yes                | postgresql://user:pass@host:5432/db |
+| `NEXTAUTH_SECRET`    | Secret for NextAuth.js                    | Yes                | mysupersecretkey                    |
+| `NEXTAUTH_URL`       | Base URL of your application              | Yes                | http://localhost:3000               |
+| `MAX_FILE_SIZE`      | Maximum file size in bytes                | No (default: 10MB) | 10485760                            |
+| `ALLOWED_FILE_TYPES` | Comma-separated allowed extensions        | No                 | pdf,jpg,png,docx                    |
+| `NODE_ENV`           | Node environment (development/production) | No                 | development                         |
+
+> **Tip:** Never commit `.env` files with secrets to version control. Use `.env.example` for safe defaults.
 
 ## 🤝 Contributing
+
+## ⚠️ Error Handling & Best Practices
+
+- All API routes should validate environment variables at runtime. If a required variable is missing, log a clear error and return a 500 response.
+- Use Zod or similar libraries to validate user input in API routes and forms.
+- Catch and log errors in API handlers, returning user-friendly error messages.
+- For file uploads, check file type and size before saving. Reject unsupported or oversized files with a clear error.
+- Use try/catch blocks in async functions and log errors for debugging.
+
+Example (API route):
+
+```ts
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+  if (!process.env.DATABASE_URL) {
+    console.error("DATABASE_URL is not set");
+    return NextResponse.json(
+      { error: "Server misconfiguration" },
+      { status: 500 }
+    );
+  }
+  try {
+    // ...existing logic...
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+```
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
