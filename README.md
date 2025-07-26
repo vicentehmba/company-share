@@ -17,7 +17,7 @@ A secure and modern internal file-sharing application for companies, built with 
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4 + shadcn/ui
 - **Authentication**: NextAuth.js with credentials provider
-- **Database**: PostgreSQL with Prisma ORM
+- **Database**: MongoDB with Mongoose ODM
 - **Forms**: React Hook Form + Zod validation
 - **Theme**: next-themes for dark/light mode
 - **File Upload**: react-dropzone
@@ -25,7 +25,7 @@ A secure and modern internal file-sharing application for companies, built with 
 ## 📋 Prerequisites
 
 - Node.js 18+
-- PostgreSQL database
+- MongoDB database
 - npm or yarn
 
 ## 🛠️ Installation
@@ -52,17 +52,14 @@ A secure and modern internal file-sharing application for companies, built with 
    Update `.env` with your database connection string and other configuration:
 
    ```
-   DATABASE_URL="postgresql://username:password@localhost:5432/companyshare"
+   MONGODB_URI="mongodb://localhost:27017/companyshare"
    NEXTAUTH_SECRET="your-secret-key-here"
    NEXTAUTH_URL="http://localhost:3000"
    ```
 
 4. **Set up the database**
 
-   ```bash
-   npx prisma migrate dev --name init
-   npx prisma generate
-   ```
+   Make sure MongoDB is running on your system. The application will automatically connect to the database specified in your `MONGODB_URI`.
 
 5. **Run the development server**
 
@@ -87,7 +84,7 @@ A secure and modern internal file-sharing application for companies, built with 
 │   ├── file/             # File-related components
 │   └── layout/           # Layout components
 ├── lib/                  # Utility functions and configurations
-├── prisma/               # Database schema and migrations
+│   └── models/           # MongoDB/Mongoose models
 ├── types/                # TypeScript type definitions
 └── public/uploads/       # File upload storage
 ```
@@ -135,9 +132,7 @@ npm start
 npm run lint
 
 # Database operations
-npx prisma studio          # Open database browser
-npx prisma migrate dev      # Run database migrations
-npx prisma generate         # Generate Prisma client
+# MongoDB will be managed through your MongoDB client or VS Code extensions
 ```
 
 ## 🚀 Deployment
@@ -164,7 +159,7 @@ CMD ["npm", "start"]
 
 | Variable             | Description                               | Required           | Example Value                       |
 | -------------------- | ----------------------------------------- | ------------------ | ----------------------------------- |
-| `DATABASE_URL`       | PostgreSQL connection string              | Yes                | postgresql://user:pass@host:5432/db |
+| `MONGODB_URI`        | MongoDB connection string                 | Yes                | mongodb://localhost:27017/companyshare |
 | `NEXTAUTH_SECRET`    | Secret for NextAuth.js                    | Yes                | mysupersecretkey                    |
 | `NEXTAUTH_URL`       | Base URL of your application              | Yes                | http://localhost:3000               |
 | `MAX_FILE_SIZE`      | Maximum file size in bytes                | No (default: 10MB) | 10485760                            |
@@ -187,16 +182,18 @@ Example (API route):
 
 ```ts
 import { NextResponse } from "next/server";
+import connectDB from "@/lib/mongodb";
 
 export async function POST(req: Request) {
-  if (!process.env.DATABASE_URL) {
-    console.error("DATABASE_URL is not set");
+  if (!process.env.MONGODB_URI) {
+    console.error("MONGODB_URI is not set");
     return NextResponse.json(
       { error: "Server misconfiguration" },
       { status: 500 }
     );
   }
   try {
+    await connectDB();
     // ...existing logic...
   } catch (error) {
     console.error(error);

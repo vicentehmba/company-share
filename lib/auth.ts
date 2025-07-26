@@ -1,7 +1,8 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { prisma } from "./prisma";
+import connectDB from "./mongodb";
+import User from "./models/User";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -16,10 +17,10 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            uniqueId: credentials.uniqueId,
-          },
+        await connectDB();
+
+        const user = await User.findOne({
+          uniqueId: credentials.uniqueId,
         });
 
         if (!user) {
@@ -36,7 +37,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         return {
-          id: user.id,
+          id: user._id.toString(),
           name: user.fullName,
           email: user.email,
           uniqueId: user.uniqueId,

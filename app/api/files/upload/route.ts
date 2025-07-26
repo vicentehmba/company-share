@@ -1,6 +1,6 @@
 // Validate required environment variables at runtime
 function validateEnv() {
-  const requiredVars = ["DATABASE_URL", "MAX_FILE_SIZE"];
+  const requiredVars = ["MONGODB_URI", "MAX_FILE_SIZE"];
   const missing = requiredVars.filter((v) => !process.env[v]);
   if (missing.length > 0) {
     console.error("Missing environment variables:", missing.join(", "));
@@ -12,7 +12,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { prisma } from "@/lib/prisma";
+import connectDB from "@/lib/mongodb";
+import File from "@/lib/models/File";
+import User from "@/lib/models/User";
 import { authOptions } from "@/lib/auth";
 import { isValidFileType } from "@/lib/utils";
 
@@ -24,6 +26,8 @@ export async function POST(request: NextRequest) {
     );
   }
   try {
+    await connectDB();
+    
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
@@ -77,29 +81,38 @@ export async function POST(request: NextRequest) {
     await writeFile(filepath, buffer);
 
     // Save file info to database
-    const fileRecord = await prisma.file.create({
-      data: {
-        name: filename,
-        originalName: file.name,
-        url: `/uploads/${filename}`,
-        mimeType: file.type,
-        size: file.size,
-        department: session.user.department,
-        ownerId: session.user.id,
-      },
-      include: {
-        owner: {
-          select: {
-            fullName: true,
-            uniqueId: true,
-          },
-        },
-      },
+    const fileRecord = await File.create({
+      name: filename,
+      originalName: file.name,
+      url: `/uploads/${filename}`,
+      mimeType: file.type,
+      size: file.size,
+      department: session.user.department,
+      ownerId: session.user.id,
     });
+
+    // Get owner details for response
+    const owner = await User.findById(session.user.id).select('fullName uniqueId');
+
+    const fileResponse = {
+      id: fileRecord._id,
+      name: fileRecord.name,
+      originalName: fileRecord.originalName,
+      url: fileRecord.url,
+      mimeType: fileRecord.mimeType,
+      size: fileRecord.size,
+      department: fileRecord.department,
+      createdAt: fileRecord.createdAt,
+      updatedAt: fileRecord.updatedAt,
+      owner: {
+        fullName: owner?.fullName,
+        uniqueId: owner?.uniqueId,
+      },
+    };
 
     return NextResponse.json({
       message: "File uploaded successfully",
-      file: fileRecord,
+      file: fileResponse,
     });
   } catch (error) {
     console.error("File upload error:", error);
