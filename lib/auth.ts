@@ -14,36 +14,44 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.uniqueId || !credentials?.password) {
+        try {
+          if (!credentials?.uniqueId || !credentials?.password) {
+            console.log("Missing credentials");
+            return null;
+          }
+
+          await connectDB();
+
+          const user = await User.findOne({
+            uniqueId: credentials.uniqueId,
+          });
+
+          if (!user) {
+            console.log("User not found:", credentials.uniqueId);
+            return null;
+          }
+
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password,
+            user.passwordHash
+          );
+
+          if (!isPasswordValid) {
+            console.log("Invalid password for user:", credentials.uniqueId);
+            return null;
+          }
+
+          return {
+            id: user._id.toString(),
+            name: user.fullName,
+            email: user.email,
+            uniqueId: user.uniqueId,
+            department: user.department,
+          };
+        } catch (error) {
+          console.error("Auth error:", error);
           return null;
         }
-
-        await connectDB();
-
-        const user = await User.findOne({
-          uniqueId: credentials.uniqueId,
-        });
-
-        if (!user) {
-          return null;
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.passwordHash
-        );
-
-        if (!isPasswordValid) {
-          return null;
-        }
-
-        return {
-          id: user._id.toString(),
-          name: user.fullName,
-          email: user.email,
-          uniqueId: user.uniqueId,
-          department: user.department,
-        };
       },
     }),
   ],

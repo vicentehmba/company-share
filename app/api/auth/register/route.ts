@@ -8,6 +8,14 @@ import { generateUniqueId } from "@/lib/utils";
 
 export async function POST(request: Request) {
   try {
+    if (!process.env.MONGODB_URI) {
+      console.error("MONGODB_URI is not set");
+      return NextResponse.json(
+        { error: "Server misconfiguration" },
+        { status: 500 }
+      );
+    }
+
     await connectDB();
     
     const body = await request.json();
